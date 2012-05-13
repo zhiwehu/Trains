@@ -44,23 +44,23 @@ class TestAssistant(unittest.TestCase):
         self.assertEqual("NO SUCH ROUTE", self.max_dis_assistant.get_distance("AED"))
 
     def test_cal_max_stops_routes(self):
-        self.max_stops_assistant.cal_routes("C", "C", 3)
-        self.assertEqual(2, len(self.max_stops_assistant.computer.routes))
+        routes = self.max_stops_assistant.get_routes("C", "C", 3)
+        self.assertEqual(2, len(routes))
 
     def test_print_exact_stops_routes(self):
         self.assertEqual(3, len(self.max_dis_assistant.get_exact_stops_routes("A", "C", 4)))
 
     def test_cal_shortest_route(self):
         # The shortest route of city A to city C
-        self.shortest_route_assistant.cal_routes("A", "C")
-        self.assertEqual(9, self.shortest_route_assistant.get_distance(self.shortest_route_assistant.computer.routes[0]))
+        routes = self.shortest_route_assistant.get_routes("A", "C")
+        self.assertEqual(9, self.shortest_route_assistant.get_distance(routes[0]))
 
-        self.shortest_route_assistant.cal_routes("B", "B")
-        self.assertEqual(9, self.shortest_route_assistant.get_distance(self.shortest_route_assistant.computer.routes[0]))
+        routes = self.shortest_route_assistant.get_routes("B", "B")
+        self.assertEqual(9, self.shortest_route_assistant.get_distance(routes[0]))
 
     def test_cal_all_routes(self):
-        self.max_dis_assistant.cal_routes("C", "C", 30)
-        self.assertEqual(7, len(self.max_dis_assistant.computer.routes))
+        routes = self.max_dis_assistant.get_routes("C", "C", 30)
+        self.assertEqual(7, len(routes))
 
 if __name__ == "__main__":
     unittest.main()
