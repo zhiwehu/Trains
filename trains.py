@@ -27,7 +27,7 @@ class Route:
         self.distance = distance
         start_city.add_start_route(self)
 
-class Assistant:
+class Computer:
     def __init__(self):
         self.cities = {}
         self.routes = []
@@ -62,6 +62,13 @@ class Assistant:
             return e.message
         return total_distance
 
+class Assistant:
+    def __init__(self, computer):
+        self.computer = computer
+
+    def get_distance(self, route):
+        return self.computer.get_distance(route)
+
     def get_exact_stops_routes(self, start_city_name, end_city_name, extra_stops):
         """
         Return the route list from start_city to end_city with extra stops.
@@ -74,7 +81,7 @@ class Assistant:
         for stop in range(extra_stops):
             route_paths = []
             for route_path in last_route_paths:
-                city = self.get_city(route_path[-1])
+                city = self.computer.get_city(route_path[-1])
                 for route in city.start_routes:
                     new_route_path = route_path + route.end_city.city_name
                     route_paths.append(new_route_path)
@@ -91,30 +98,34 @@ class Assistant:
         return False
 
     def handle_route(self, route):
-        self.routes.append(route)
+        self.computer.routes.append(route)
 
     def cal_routes(self, start_city_name, end_city_name, value=0):
         """
         Calculate all routes from start city to end city which max value
         The logic to check the max_value is in sub class
-        The result save to self.routes.
+        The result save to self.computer.routes.
 
         @param start_city_name: start city name
         @param end_city_name: end city name
         """
+        self.computer.routes = []
+        self.cal_routes_i(start_city_name, end_city_name, value)
+
+    def cal_routes_i(self, start_city_name, end_city_name, value):
         if self.check_value(start_city_name, value):
             return
 
         if len(start_city_name) > 1 and start_city_name.endswith(end_city_name):
             self.handle_route(start_city_name)
 
-        end_city = self.get_city(start_city_name[-1])
+        end_city = self.computer.get_city(start_city_name[-1])
         for route in end_city.start_routes:
-            self.cal_routes(start_city_name + route.end_city.city_name, end_city_name, value)
+            self.cal_routes_i(start_city_name + route.end_city.city_name, end_city_name, value)
 
 class CalMaxDistanceAssistant(Assistant):
-    def __init__(self):
-        Assistant.__init__(self)
+    def __init__(self, computer):
+        Assistant.__init__(self, computer)
 
     def check_value(self, route, value):
         """
@@ -123,8 +134,8 @@ class CalMaxDistanceAssistant(Assistant):
         return self.get_distance(route) >= value
 
 class CalMaxStopsAssistant(Assistant):
-    def __init__(self):
-        Assistant.__init__(self)
+    def __init__(self, computer):
+        Assistant.__init__(self, computer)
 
     def check_value(self, route, value):
         """
@@ -133,19 +144,19 @@ class CalMaxStopsAssistant(Assistant):
         return (len(route) - 1) > value
 
 class CalShortestAssistant(Assistant):
-    def __init__(self):
-        Assistant.__init__(self)
+    def __init__(self, computer):
+        Assistant.__init__(self, computer)
 
     def check_value(self, route, value):
         return route[1:].count(route[-1]) > 1
 
     def handle_route(self, route):
-        if self.routes:
-            old_route = self.routes[0]
+        if self.computer.routes:
+            old_route = self.computer.routes[0]
             if self.get_distance(route) < self.get_distance(old_route):
-                self.routes[0] = route
+                self.computer.routes[0] = route
         else:
-            self.routes.append(route)
+            self.computer.routes.append(route)
 
 if __name__ == "__main__":
     # Init cities
@@ -166,10 +177,12 @@ if __name__ == "__main__":
     Route(e, b, 3)
     Route(a, e, 7)
 
-    # Hire another assistant for calculate max stops
-    assistant = CalMaxStopsAssistant()
-    # The assistant need to study cities
-    assistant.add_cities([a, b, c, d, e])
+    # Use a computer to load all cities and routes data
+    computer = Computer()
+    computer.add_cities([a, b, c, d, e])
+
+    # Hire an assistant
+    assistant = CalMaxStopsAssistant(computer)
 
     # Please tell me the distance of route A-B-C
     print assistant.get_distance("ABC")
@@ -187,36 +200,24 @@ if __name__ == "__main__":
     print assistant.get_distance("AED")
 
     # The # of trips between city C and C with a max stops 3
-    assistant.routes = []
     assistant.cal_routes("C", "C", 3)
-    #print assistant.routes
-    print len(assistant.routes)
+    print len(assistant.computer.routes)
 
     # Print how many routes between city A to C and extra stops if 4
     routes = assistant.get_exact_stops_routes("A", "C", 4)
-    #print routes
     print len(routes)
 
-    # The shortest route of city A to city C
     # Hire another assistant for calculate shortest distance
-    assistant = CalShortestAssistant()
-    # The assistant need to study cities
-    assistant.add_cities([a, b, c, d, e])
-    assistant.routes = []
+    assistant = CalShortestAssistant(computer)
+    # The shortest route of city A to city C
     assistant.cal_routes("A", "C")
-    print assistant.get_distance(assistant.routes[0])
-    #print assistant.shortest_routeZ
+    print assistant.get_distance(computer.routes[0])
     # The shortest route of city B to city B
-    assistant.routes = []
     assistant.cal_routes("B", "B")
-    print assistant.get_distance(assistant.routes[0])
+    print assistant.get_distance(computer.routes[0])
 
     # The # of different routes from city C to C with distance less then 30
     # Hire an assistant for calculate max distance
-    assistant = CalMaxDistanceAssistant()
-    # The assistant need to study cities
-    assistant.add_cities([a, b, c, d, e])
-    assistant.routes = []
+    assistant = CalMaxDistanceAssistant(computer)
     assistant.cal_routes("C", "C", 30)
-    #print assistant.routes
-    print len(assistant.routes)
+    print len(computer.routes)
